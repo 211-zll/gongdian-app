@@ -1,4 +1,4 @@
-﻿package com.gongdian.app;
+package com.gongdian.app;
 
 import android.app.Activity;
 import android.os.Bundle;

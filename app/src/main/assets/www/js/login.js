@@ -1,4 +1,4 @@
-﻿/**
+/**
  * login.js —— 登录 / 注册 / 手机验证页面
  */
 window.LoginPage = (function () {

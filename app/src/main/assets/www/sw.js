@@ -1,4 +1,4 @@
-﻿/* sw.js —— 离线缓存 Service Worker */
+/* sw.js —— 离线缓存 Service Worker */
 var CACHE = "gd-app-v1";
 var ASSETS = [
   "./",

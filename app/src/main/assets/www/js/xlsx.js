@@ -1,4 +1,4 @@
-﻿/**
+/**
  * xlsx.js —— 轻量级 Excel(.xlsx) 读写库（纯 JS，无外部依赖）
  * 核心算法（CRC32 / ZIP / Inflate / CSV）为平台无关纯 JS，
  * 浏览器相关 API（TextEncoder/DOMParser/Blob）仅在函数内使用。

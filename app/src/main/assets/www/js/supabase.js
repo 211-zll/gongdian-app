@@ -1,4 +1,4 @@
-﻿/**
+/**
  * supabase.js —— Supabase 云端数据层对接（REST API，无需 SDK）
  * 需要先执行建表 SQL（见 README 或 supabase_setup.sql）。
  * 安全说明：使用 anon key + 关闭 RLS，适合内部使用；生产环境建议启用 Supabase Auth。
