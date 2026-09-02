@@ -1,0 +1,16 @@
+﻿{
+  "name": "供电工区工作台",
+  "short_name": "供电工区",
+  "description": "供电工区班组长工作台：人员排班、工分、设备资料、待办、备忘录、学习资料，无需登录，支持导出备份。",
+  "start_url": "index.html",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f3f5f7",
+  "theme_color": "#10b981",
+  "lang": "zh-CN",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}
