@@ -238,7 +238,7 @@ public class MainActivity extends Activity {
     // Android 9 及以下：写入公共目录并广播扫描，让相册/文件管理器可见
     private boolean saveLegacy(byte[] bytes, String mime, String name, boolean asImage) throws Exception {
         String sub = (asImage ? Environment.DIRECTORY_PICTURES : Environment.DIRECTORY_DOWNLOADS) + "/GongDianWork";
-        File dir = new File(Environment.getExternalStoragePublicDirectory(sub));
+        File dir = Environment.getExternalStoragePublicDirectory(sub);
         if (!dir.exists() && !dir.mkdirs()) {
             return false;
         }
