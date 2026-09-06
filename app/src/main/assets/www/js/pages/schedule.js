@@ -147,7 +147,7 @@ window.PageSchedule = (function () {
     for (var i = 0; i < m.items.length; i++) {
       if (m.items[i].personName === name && m.items[i].scheduleDate === dateStr) { idx = i; break; }
     }
-    if (shift === "休" || shift === "") {
+    if (shift === "") { // 清空班次（“休”同样保存为记录，表格才能显示“休”）
       if (idx >= 0) m.items.splice(idx, 1);
     } else {
       var rec = { id: name + "-" + dateStr, personName: name, scheduleDate: dateStr, shiftType: shift, yearMonth: state.yearMonth };

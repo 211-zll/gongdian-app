@@ -82,6 +82,16 @@
     downloadBlob(blob, filename);
   }
   function downloadDataUrl(dataUrl, filename) {
+    // 安卓 APP（WebView）内：图片保存到手机相册，文件保存到“下载”目录
+    if (window.AndroidBridge) {
+      try {
+        var isImg = /^data:image\//i.test(dataUrl);
+        var saved = isImg
+          ? window.AndroidBridge.saveImageToGallery(dataUrl, filename)
+          : window.AndroidBridge.saveFile(dataUrl, filename);
+        if (saved) return true;
+      } catch (e) {}
+    }
     var a = document.createElement("a");
     a.href = dataUrl;
     a.download = filename;
@@ -89,6 +99,7 @@
     a.click();
     document.body.removeChild(a);
     setTimeout(function () { URL.revokeObjectURL(dataUrl); }, 1000);
+    return true;
   }
 
   /* ---------- Toast 提示 ---------- */

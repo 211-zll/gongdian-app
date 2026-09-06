@@ -258,10 +258,7 @@ window.PageLearning = (function () {
       for (var i = 0; i < l.materials.length; i++) if (l.materials[i].id === el.getAttribute("data-id")) {
         var mm = l.materials[i];
         if (mm.fileData) {
-          var a = document.createElement("a");
-          a.href = mm.fileData;
-          a.download = mm.fileName || (mm.title + "." + (mm.fileType || "file"));
-          document.body.appendChild(a); a.click(); document.body.removeChild(a);
+          U.downloadDataUrl(mm.fileData, mm.fileName || (mm.title + "." + (mm.fileType || "file")));
           U.toast("已开始下载");
         }
         return;

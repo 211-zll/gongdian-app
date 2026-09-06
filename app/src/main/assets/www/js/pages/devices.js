@@ -475,12 +475,7 @@ window.PageDevices = (function () {
     var photos = S.getPhotos();
     for (var i = 0; i < photos.length; i++) {
       if (photos[i].id === id) {
-        var a = document.createElement("a");
-        a.href = photos[i].dataUrl;
-        a.download = photos[i].name || ("photo_" + id + ".jpg");
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
+        U.downloadDataUrl(photos[i].dataUrl, photos[i].name || ("photo_" + id + ".jpg"));
         U.toast("已保存到相册");
         return;
       }
@@ -771,12 +766,7 @@ window.PageDevices = (function () {
     var list = S.getDrawings();
     for (var i = 0; i < list.length; i++) {
       if (list[i].id === id) {
-        var a = document.createElement("a");
-        a.href = list[i].dataUrl;
-        a.download = list[i].name || "drawing";
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
+        U.downloadDataUrl(list[i].dataUrl, list[i].name || "drawing");
         U.toast("已开始下载");
         return;
       }

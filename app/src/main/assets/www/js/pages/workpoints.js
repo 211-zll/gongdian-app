@@ -28,6 +28,10 @@ window.PageWorkPoints = (function () {
     return m;
   }
 
+  function save(m) {
+    S.saveWorkPointsMonth(state.yearMonth, m);
+  }
+
   function buildView() {
     var m = load();
     var parts = ymParts(state.yearMonth);
@@ -284,12 +288,102 @@ window.PageWorkPoints = (function () {
     U.toast("已导出 Excel");
   }
 
+  /* ---------- 导出图片 ---------- */
+  function exportImage() {
+    var v = buildView();
+    var days = v.days;
+    var persons = v.persons;
+    if (persons.length === 0) { U.toast("暂无工分数据可导出", "error"); return; }
+    var nameW = 92, cellW = 46, cellH = 30, headerH = 40, pad = 10, scale = 2;
+    var totalW = nameW + days * cellW + 64;
+    var bodyTop = pad + 30;
+    var reasonList = [];
+    for (var rd = 1; rd <= days; rd++) {
+      var rv = v.reasons[ymd(state.yearMonth, rd)];
+      if (rv) reasonList.push({ day: rd, text: rv });
+    }
+    var reasonH = reasonList.length > 0 ? (20 + reasonList.length * 18 + 10) : 0;
+    var rankH = persons.length > 0 ? (20 + persons.length * 18 + 6) : 0;
+    var H = (bodyTop + headerH + persons.length * cellH + 10 + reasonH + rankH + 16) * scale + pad * 2;
+    var W = (totalW + pad * 2) * scale;
+    var canvas = document.createElement("canvas");
+    canvas.width = W; canvas.height = H;
+    var ctx = canvas.getContext("2d");
+    ctx.scale(scale, scale);
+    ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, W / scale, H / scale);
+    ctx.fillStyle = "#111827"; ctx.font = "bold 15px sans-serif"; ctx.textAlign = "left"; ctx.textBaseline = "middle";
+    ctx.fillText("供电工区工分统计（" + state.yearMonth + "）", pad, pad + 14);
+    ctx.fillStyle = "#f3f4f6"; ctx.fillRect(pad, bodyTop, totalW, headerH);
+    ctx.strokeStyle = "#d1d5db"; ctx.strokeRect(pad, bodyTop, totalW, headerH + persons.length * cellH);
+    ctx.fillStyle = "#374151"; ctx.font = "12px sans-serif"; ctx.textAlign = "center";
+    ctx.fillText("姓名", pad + nameW / 2, bodyTop + headerH / 2);
+    ctx.beginPath(); ctx.moveTo(pad + nameW, bodyTop); ctx.lineTo(pad + nameW, bodyTop + headerH + persons.length * cellH); ctx.stroke();
+    for (var d = 1; d <= days; d++) {
+      var x = pad + nameW + (d - 1) * cellW;
+      var dt = new Date(v.parts.year, v.parts.month, d);
+      if (dt.getDay() === 0 || dt.getDay() === 6) { ctx.fillStyle = "#fef2f2"; ctx.fillRect(x, bodyTop, cellW, headerH + persons.length * cellH); }
+      ctx.fillStyle = "#374151"; ctx.font = "12px sans-serif";
+      ctx.fillText(String(d), x + cellW / 2, bodyTop + headerH / 2 - 5);
+      ctx.fillStyle = "#9ca3af"; ctx.font = "10px sans-serif";
+      ctx.fillText(U.weekdayCn(dt).slice(1), x + cellW / 2, bodyTop + headerH / 2 + 7);
+      ctx.strokeStyle = "#d1d5db";
+      ctx.beginPath(); ctx.moveTo(x, bodyTop); ctx.lineTo(x, bodyTop + headerH); ctx.stroke();
+    }
+    ctx.fillStyle = "#374151"; ctx.font = "12px sans-serif";
+    ctx.fillText("合计", pad + nameW + days * cellW + 32, bodyTop + headerH / 2);
+    for (var r = 0; r < persons.length; r++) {
+      var y = bodyTop + headerH + r * cellH;
+      ctx.fillStyle = "#f9fafb"; ctx.fillRect(pad, y, nameW, cellH);
+      ctx.fillStyle = "#111827"; ctx.font = "12px sans-serif"; ctx.textAlign = "left";
+      ctx.fillText(persons[r], pad + 8, y + cellH / 2);
+      ctx.strokeStyle = "#e5e7eb";
+      ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(pad + totalW, y); ctx.stroke();
+      for (var d2 = 1; d2 <= days; d2++) {
+        var x2 = pad + nameW + (d2 - 1) * cellW;
+        ctx.strokeStyle = "#e5e7eb";
+        ctx.beginPath(); ctx.moveTo(x2, y); ctx.lineTo(x2, y + cellH); ctx.stroke();
+        var pt = v.map[persons[r]] ? (v.map[persons[r]][ymd(state.yearMonth, d2)] || 0) : 0;
+        ctx.textAlign = "center";
+        ctx.fillStyle = pt > 0 ? "#0f766e" : "#d1d5db";
+        ctx.fillText(pt > 0 ? String(pt) : "-", x2 + cellW / 2, y + cellH / 2);
+      }
+      ctx.textAlign = "center"; ctx.fillStyle = "#111827"; ctx.font = "bold 12px sans-serif";
+      ctx.fillText(String(v.totals[persons[r]] || 0), pad + nameW + days * cellW + 32, y + cellH / 2);
+      ctx.font = "12px sans-serif";
+    }
+    var cy = bodyTop + headerH + persons.length * cellH + 14;
+    if (reasonList.length > 0) {
+      ctx.textAlign = "left"; ctx.fillStyle = "#374151"; ctx.font = "bold 12px sans-serif";
+      ctx.fillText("本月事由", pad, cy);
+      cy += 18;
+      ctx.fillStyle = "#4b5563"; ctx.font = "11px sans-serif";
+      for (var ri = 0; ri < reasonList.length; ri++) {
+        ctx.fillText(reasonList[ri].day + "日：" + reasonList[ri].text, pad + 10, cy);
+        cy += 18;
+      }
+      cy += 6;
+    }
+    if (persons.length > 0) {
+      ctx.textAlign = "left"; ctx.fillStyle = "#374151"; ctx.font = "bold 12px sans-serif";
+      ctx.fillText("工分排名", pad, cy);
+      cy += 18;
+      ctx.fillStyle = "#4b5563"; ctx.font = "11px sans-serif";
+      for (var k2 = 0; k2 < v.ranking.length; k2++) {
+        ctx.fillText((k2 + 1) + "." + v.ranking[k2].personName + "（" + (v.ranking[k2].total || 0) + " 分）", pad + 10, cy);
+        cy += 18;
+      }
+    }
+    var dataUrl = canvas.toDataURL("image/png");
+    U.downloadDataUrl(dataUrl, "工分统计_" + state.yearMonth + ".png");
+    U.toast("已导出图片");
+  }
   function menu() {
     var html =
       '<div class="gd-modal-title">工分统计操作</div>' +
       '<div class="gd-ops-list">' +
       '<button class="gd-ops-item" data-act="wp-add">' + U.icon("plus") + "添加人员（从花名册）</button>" +
       '<button class="gd-ops-item" data-act="wp-export">' + U.icon("download") + "导出 Excel</button>" +
+'<button class="gd-ops-item" data-act="wp-img">' + U.icon("image") + "导出图片</button>" +
       "</div>" +
       '<div class="gd-modal-btns"><button class="gd-btn ghost" data-act="cancel">关闭</button></div>';
     U.openModal(html, { dismissible: true }).then(function () {});
@@ -318,6 +412,7 @@ window.PageWorkPoints = (function () {
     "wp-down": function (el) { movePerson(el.getAttribute("data-name"), 1); },
     "wp-delperson": function (el) { removePerson(el.getAttribute("data-name")); },
     "wp-export": exportExcel,
+    "wp-img": exportImage,
     "wp-fs": function () { U.enterFullscreen("wp-fs-exit"); },
     "wp-fs-exit": function () { U.exitFullscreen(); }
   };
