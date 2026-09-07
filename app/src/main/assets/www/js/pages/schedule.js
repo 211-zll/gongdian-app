@@ -200,32 +200,38 @@ window.PageSchedule = (function () {
     window.App.refresh();
   }
 
-  /* ---------- 添加人员 ---------- */
+  /* ---------- 添加人员（可从花名册勾选，也可手动输入） ---------- */
   function addPerson() {
     var roster = S.getRoster();
     var m = load();
     var existing = (m.persons || []).slice();
     var available = roster.filter(function (p) { return existing.indexOf(p.name) < 0; });
-    var html = '<div class="gd-modal-title">从花名册选择人员</div>';
+    var html = '<div class="gd-modal-title">添加人员（可勾选花名册或手动输入）</div>';
     if (available.length === 0) {
-      html += '<div class="gd-empty small">' + U.icon("users") + "<p>所有人员均已添加，或花名册暂无人员</p></div>";
-      html += '<div class="gd-modal-btns"><button class="gd-btn ghost" data-act="cancel">关闭</button></div>';
-      U.openModal(html, { dismissible: true }).then(function () {});
-      return;
+      html += '<div class="gd-empty small">' + U.icon("users") + "<p>花名册中暂无可勾选人员，可直接在下方手动输入姓名</p></div>";
     }
     html += '<form class="gd-form"><div class="gd-check-list">';
     for (var i = 0; i < available.length; i++) {
       html += '<label class="gd-check"><input type="checkbox" name="sel" value="' + U.esc(available[i].name) + '"/><span>' + U.esc(available[i].name) + (available[i].position ? " · " + U.esc(available[i].position) : "") + "</span></label>";
     }
-    html += '</div><div class="gd-modal-btns">';
+    html += '</div><div class="gd-field" style="margin-top:10px"><label class="gd-label">或手动输入姓名（不在花名册也能添加，多个用逗号分隔）</label><input name="manual" class="gd-input" placeholder="例如：张三, 李四"/></div><div class="gd-modal-btns">';
     html += '<button type="button" class="gd-btn ghost" data-act="cancel">取消</button>';
     html += '<button type="submit" class="gd-btn primary">确认添加</button></div></form>';
     U.openModal(html, { dismissible: true }).then(function (data) {
       if (!data) return;
-      var chosen = [];
-      for (var k = 0; k < data.sel.length; k++) if (data.sel[k]) chosen.push(data.sel[k]);
-      if (chosen.length === 0) return;
       var mm = load();
+      var chosen = [];
+      if (Array.isArray(data.sel)) {
+        for (var k = 0; k < data.sel.length; k++) if (data.sel[k]) chosen.push(data.sel[k]);
+      } else if (data.sel === true && available.length === 1) {
+        chosen.push(available[0].name);
+      }
+      var manual = String(data.manual || "").split(/[,，、;；\s]+/);
+      for (var mi = 0; mi < manual.length; mi++) {
+        var nm2 = (manual[mi] || "").trim();
+        if (nm2 && chosen.indexOf(nm2) < 0 && (mm.persons || []).indexOf(nm2) < 0) chosen.push(nm2);
+      }
+      if (chosen.length === 0) return;
       mm.persons = (mm.persons || []).concat(chosen);
       save(mm);
       U.toast("已添加 " + chosen.length + " 人");

@@ -238,12 +238,9 @@ window.PageWorkPoints = (function () {
     var m = load();
     var existing = (m.persons || []).slice();
     var available = roster.filter(function (p) { return existing.indexOf(p.name) < 0; });
-    var html = '<div class="gd-modal-title">从花名册选择人员</div>';
+    var html = '<div class="gd-modal-title">添加人员（可勾选花名册或手动输入）</div>';
     if (available.length === 0) {
-      html += '<div class="gd-empty small">' + U.icon("users") + "<p>所有人员均已添加，或花名册暂无人员</p></div>";
-      html += '<div class="gd-modal-btns"><button class="gd-btn ghost" data-act="cancel">关闭</button></div>';
-      U.openModal(html, { dismissible: true }).then(function () {});
-      return;
+      html += '<div class="gd-empty small">' + U.icon("users") + "<p>花名册中暂无可勾选人员，可直接在下方手动输入姓名</p></div>";
     }
     html += '<form class="gd-form"><div class="gd-check-list">';
     for (var i = 0; i < available.length; i++) {

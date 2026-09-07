@@ -347,7 +347,7 @@ window.PageDevices = (function () {
       if (topPhotos.length) {
         html += '<div class="photo-grid">';
         for (var p = 0; p < topPhotos.length; p++) {
-          html += '<div class="photo-item" data-act="photo-view" data-id="' + U.esc(topPhotos[p].id) + '"><img src="' + U.esc(topPhotos[p].dataUrl) + '" alt=""/></div>';
+          html += '<div class="photo-item" data-act="photo-view" data-id="' + U.esc(topPhotos[p].id) + '"><img src="' + U.esc(topPhotos[p].dataUrl) + '" alt=""/><em class="photo-name">' + U.esc(topPhotos[p].name || "未命名") + "</em></div>";
         }
         html += "</div>";
       }
@@ -372,7 +372,7 @@ window.PageDevices = (function () {
         html += '<div class="photo-grid">';
         for (var p2 = 0; p2 < subPhotos.length; p2++) {
           var ph = subPhotos[p2];
-          html += '<div class="photo-item" data-act="photo-view" data-id="' + U.esc(ph.id) + '"><img src="' + U.esc(ph.dataUrl) + '" alt=""/></div>';
+          html += '<div class="photo-item" data-act="photo-view" data-id="' + U.esc(ph.id) + '"><img src="' + U.esc(ph.dataUrl) + '" alt=""/><em class="photo-name">' + U.esc(ph.name || "未命名") + "</em></div>";
         }
         html += "</div>";
       }
@@ -467,11 +467,35 @@ window.PageDevices = (function () {
       '<div class="gd-modal-btns">' +
       '<button class="gd-btn ghost" data-act="photo-zoom" data-id="' + U.esc(ph.id) + '">' + U.icon("expand") + "全屏</button>" +
       '<button class="gd-btn ghost" data-act="photo-save" data-id="' + U.esc(ph.id) + '">' + U.icon("download") + "保存</button>" +
+      '<button class="gd-btn ghost" data-act="photo-rename" data-id="' + U.esc(ph.id) + '">' + U.icon("edit") + "重命名</button>" +
       '<button class="gd-btn danger" data-act="photo-del" data-id="' + U.esc(ph.id) + '">' + U.icon("trash") + "删除</button>" +
       '<button class="gd-btn primary" data-act="cancel">关闭</button></div>';
     U.openModal(html, { dismissible: true }).then(function () {});
   }
 
+  function photoRename(id) {
+    var photos = S.getPhotos();
+    var ph = null;
+    for (var i = 0; i < photos.length; i++) if (photos[i].id === id) { ph = photos[i]; break; }
+    if (!ph) return;
+    var html =
+      '<div class="gd-modal-title">照片重命名</div>' +
+      '<form class="gd-form">' +
+      '<div class="gd-field"><label class="gd-label">照片名称</label><input name="name" class="gd-input" value="' + U.esc(ph.name || "") + '" placeholder="输入照片名称，如：1号杆塔"/></div>' +
+      '<div class="gd-modal-btns">' +
+      '<button type="button" class="gd-btn ghost" data-act="cancel">取消</button>' +
+      '<button type="submit" class="gd-btn primary">保存</button></div></form>';
+    U.openModal(html, { dismissible: true }).then(function (data) {
+      if (!data) return;
+      var list = S.getPhotos();
+      for (var j = 0; j < list.length; j++) {
+        if (list[j].id === id) { list[j].name = (data.name || "").trim(); break; }
+      }
+      S.savePhotos(list);
+      U.toast("已重命名");
+      window.App.refresh();
+    });
+  }
   function photoZoom(id) {
     var photos = S.getPhotos();
     for (var i = 0; i < photos.length; i++) {
@@ -885,6 +909,7 @@ window.PageDevices = (function () {
     "album-del": function (el) { albumDel(el.getAttribute("data-id")); },
     "photo-view": function (el) { photoView(el.getAttribute("data-id")); },
     "photo-zoom": function (el) { photoZoom(el.getAttribute("data-id")); },
+    "photo-rename": function (el) { photoRename(el.getAttribute("data-id")); },
     "photo-open": function (el) { U.lightbox(el.getAttribute("data-src") || "", "设备照片"); },
     "photo-save": function (el) { photoSave(el.getAttribute("data-id")); },
     "photo-del": function (el) { photoDel(el.getAttribute("data-id")); },

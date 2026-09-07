@@ -91,7 +91,11 @@ window.PageLearning = (function () {
     html += '<div class="gd-modal-btns">';
     if (m.fileUrl || m.fileData) {
       var openHref = m.fileData ? m.fileData : m.fileUrl;
-      html += '<a class="gd-btn primary" target="_blank" rel="noopener" href="' + U.esc(openHref) + '">' + U.icon("file") + "打开</a>";
+      if (m.fileData && window.AndroidBridge && window.AndroidBridge.openFileExternal) {
+        html += '<button class="gd-btn primary" data-act="learn-open" data-id="' + U.esc(m.id) + '">' + U.icon("file") + "用手机应用打开</button>";
+      } else {
+        html += '<a class="gd-btn primary" target="_blank" rel="noopener" href="' + U.esc(openHref) + '">' + U.icon("file") + "打开</a>";
+      }
       if (m.fileData) {
         html += '<button class="gd-btn ghost" data-act="learn-download" data-id="' + U.esc(m.id) + '">' + U.icon("download") + "下载</button>";
       }
@@ -253,6 +257,19 @@ window.PageLearning = (function () {
     "learn-share": function (el) { share(el.getAttribute("data-id")); },
     "learn-cat": function (el) { state.cat = el.getAttribute("data-v"); window.App.refresh(); },
     "learn-records": records,
+    "learn-open": function (el) {
+      var l = S.getLearning();
+      for (var i = 0; i < l.materials.length; i++) if (l.materials[i].id === el.getAttribute("data-id")) {
+        var mm = l.materials[i];
+        if (mm.fileData && window.AndroidBridge && window.AndroidBridge.openFileExternal) {
+          window.AndroidBridge.openFileExternal(mm.fileData, mm.fileName || (mm.title + "." + (mm.fileType || "file")));
+          U.toast("正在调用手机应用打开…");
+        } else {
+          U.toast("该资料没有可打开的本地文件", "error");
+        }
+        return;
+      }
+    },
     "learn-download": function (el) {
       var l = S.getLearning();
       for (var i = 0; i < l.materials.length; i++) if (l.materials[i].id === el.getAttribute("data-id")) {

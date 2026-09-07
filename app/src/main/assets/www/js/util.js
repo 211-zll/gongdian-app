@@ -313,11 +313,16 @@
               data[nm] = inp.value;
             }
           }
-          // 复选框：单个返回布尔，多个返回选中值数组
+          // 复选框：多个同名返回选中值数组；单个时若 value 是自定义值（如姓名）也返回数组，否则返回布尔（如“重要”开关）
           for (var g in checkboxGroups) {
             var group = checkboxGroups[g];
             if (group.length === 1) {
-              data[g] = group[0].checked;
+              var v0 = group[0].value || "";
+              if (group[0].checked && v0 && v0 !== "on") {
+                data[g] = [v0];
+              } else {
+                data[g] = group[0].checked;
+              }
             } else {
               data[g] = [];
               for (var gi = 0; gi < group.length; gi++) {

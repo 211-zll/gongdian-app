@@ -191,6 +191,12 @@ public class MainActivity extends Activity {
             return saveDataUrl(dataUrl, filename, false);
         }
 
+        // 用手机上的其他应用（如 WPS）打开文件
+        @JavascriptInterface
+        public void openFileExternal(String dataUrl, String filename) {
+            openExternalFile(dataUrl, filename);
+        }
+
         // —— 导出到用户自选位置（分块写入临时文件，随后弹系统“保存到”对话框） ——
         @JavascriptInterface
         public boolean beginSave(String filename) {
@@ -240,6 +246,75 @@ public class MainActivity extends Activity {
         }
     }
 
+    // 用系统“打开方式”调起其他应用（WPS 等）查看文件
+    private void openExternalFile(final String dataUrl, final String filename) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    byte[] bytes = decodeDataUrlBytes(dataUrl);
+                    if (bytes == null) {
+                        return;
+                    }
+                    File dir = new File(getCacheDir(), "shared");
+                    if (!dir.exists() && !dir.mkdirs()) {
+                        return;
+                    }
+                    String name = sanitize(filename);
+                    if (name.length() == 0) {
+                        name = "file";
+                    }
+                    File out = new File(dir, name);
+                    FileOutputStream fos = new FileOutputStream(out);
+                    fos.write(bytes);
+                    fos.flush();
+                    fos.close();
+                    Uri uri = androidx.core.content.FileProvider.getUriForFile(MainActivity.this, getPackageName() + ".fileprovider", out);
+                    Intent i = new Intent(Intent.ACTION_VIEW);
+                    i.setDataAndType(uri, mimeForName(name));
+                    i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    startActivity(Intent.createChooser(i, "选择打开方式"));
+                } catch (Exception e) {
+                    // 无可用应用或失败时忽略
+                }
+            }
+        });
+    }
+
+    private byte[] decodeDataUrlBytes(String dataUrl) {
+        if (dataUrl == null || !dataUrl.startsWith("data:")) {
+            return null;
+        }
+        try {
+            int comma = dataUrl.indexOf(',');
+            if (comma < 0) {
+                return null;
+            }
+            String b64 = dataUrl.substring(comma + 1);
+            byte[] bytes = Base64.decode(b64, Base64.DEFAULT);
+            return (bytes == null || bytes.length == 0) ? null : bytes;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private String mimeForName(String name) {
+        String n = (name == null ? "" : name).toLowerCase();
+        if (n.endsWith(".pdf")) return "application/pdf";
+        if (n.endsWith(".doc")) return "application/msword";
+        if (n.endsWith(".docx")) return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+        if (n.endsWith(".xls")) return "application/vnd.ms-excel";
+        if (n.endsWith(".xlsx")) return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+        if (n.endsWith(".ppt")) return "application/vnd.ms-powerpoint";
+        if (n.endsWith(".pptx")) return "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+        if (n.endsWith(".txt")) return "text/plain";
+        if (n.endsWith(".jpg") || n.endsWith(".jpeg")) return "image/jpeg";
+        if (n.endsWith(".png")) return "image/png";
+        if (n.endsWith(".gif")) return "image/gif";
+        if (n.endsWith(".webp")) return "image/webp";
+        if (n.endsWith(".mp4")) return "video/mp4";
+        return "application/octet-stream";
+    }
     private boolean saveDataUrl(String dataUrl, String filename, boolean asImage) {
         if (dataUrl == null || !dataUrl.startsWith("data:")) {
             return false;
