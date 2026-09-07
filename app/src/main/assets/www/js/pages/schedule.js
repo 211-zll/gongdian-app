@@ -23,8 +23,10 @@ window.PageSchedule = (function () {
   }
 
   function load() {
+    var all = S.getSchedule();
+    var exists = !!(all && Object.prototype.hasOwnProperty.call(all, state.yearMonth));
     var m = S.getScheduleMonth(state.yearMonth);
-    if (!m.persons || m.persons.length === 0) {
+    if (!exists) {
       var roster = S.getRoster();
       m.persons = roster.map(function (p) { return p.name; });
       if (m.persons.length > 0) S.saveScheduleMonth(state.yearMonth, m);

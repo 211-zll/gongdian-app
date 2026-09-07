@@ -293,12 +293,12 @@ window.PageDevices = (function () {
     if (it.photos && it.photos.length) {
       html += '<div class="gd-photo-strip">';
       for (var k = 0; k < it.photos.length; k++) {
-        html += '<img src="' + U.esc(it.photos[k]) + '" alt="设备照片" loading="lazy"/>';
+        html += '<img src="' + U.esc(it.photos[k]) + '" alt="设备照片" loading="lazy" data-act="photo-open" data-src="' + U.esc(it.photos[k]) + '"/>';
       }
       html += "</div>";
     }
     if (it.diagramData || it.diagramUrl) {
-      html += '<div class="gd-detail-row"><span>一次接线图</span><b>' + (it.diagramData ? '<img class="diagram-preview" src="' + U.esc(it.diagramData) + '" alt="一次接线图"/>' : "") + (it.diagramUrl ? '<a class="gd-link" target="_blank" rel="noopener" href="' + U.esc(it.diagramUrl) + '">查看原图</a>' : "") + "</b></div>";
+      html += '<div class="gd-detail-row"><span>一次接线图</span><b>' + (it.diagramData ? '<img class="diagram-preview" src="' + U.esc(it.diagramData) + '" alt="一次接线图" data-act="photo-open" data-src="' + U.esc(it.diagramData) + '"/>' : "") + (it.diagramUrl ? '<a class="gd-link" target="_blank" rel="noopener" href="' + U.esc(it.diagramUrl) + '">查看原图</a>' : "") + "</b></div>";
     }
     html += '<div class="gd-detail-btns">';
     html += '<button class="gd-btn primary" data-act="dev-edit-device" data-id="' + U.esc(it.id) + '">' + U.icon("edit") + "编辑</button>";
@@ -463,14 +463,24 @@ window.PageDevices = (function () {
     if (!ph) return;
     var html =
       '<div class="gd-modal-title">照片查看</div>' +
-      '<div class="photo-view"><img src="' + U.esc(ph.dataUrl) + '" alt=""/></div>' +
+      '<div class="photo-view"><img src="' + U.esc(ph.dataUrl) + '" alt="" data-act="photo-zoom" data-id="' + U.esc(ph.id) + '"/><p class="gd-hint">点击图片或「全屏」可放大缩小查看</p></div>' +
       '<div class="gd-modal-btns">' +
+      '<button class="gd-btn ghost" data-act="photo-zoom" data-id="' + U.esc(ph.id) + '">' + U.icon("expand") + "全屏</button>" +
       '<button class="gd-btn ghost" data-act="photo-save" data-id="' + U.esc(ph.id) + '">' + U.icon("download") + "保存</button>" +
       '<button class="gd-btn danger" data-act="photo-del" data-id="' + U.esc(ph.id) + '">' + U.icon("trash") + "删除</button>" +
       '<button class="gd-btn primary" data-act="cancel">关闭</button></div>';
     U.openModal(html, { dismissible: true }).then(function () {});
   }
 
+  function photoZoom(id) {
+    var photos = S.getPhotos();
+    for (var i = 0; i < photos.length; i++) {
+      if (photos[i].id === id) {
+        U.lightbox(photos[i].dataUrl, photos[i].name || "照片");
+        return;
+      }
+    }
+  }
   function photoSave(id) {
     var photos = S.getPhotos();
     for (var i = 0; i < photos.length; i++) {
@@ -874,6 +884,8 @@ window.PageDevices = (function () {
     "album-rename": function (el) { albumRename(el.getAttribute("data-id")); },
     "album-del": function (el) { albumDel(el.getAttribute("data-id")); },
     "photo-view": function (el) { photoView(el.getAttribute("data-id")); },
+    "photo-zoom": function (el) { photoZoom(el.getAttribute("data-id")); },
+    "photo-open": function (el) { U.lightbox(el.getAttribute("data-src") || "", "设备照片"); },
     "photo-save": function (el) { photoSave(el.getAttribute("data-id")); },
     "photo-del": function (el) { photoDel(el.getAttribute("data-id")); },
     "drawing-upload": uploadDrawing,

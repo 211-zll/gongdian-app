@@ -19,8 +19,10 @@ window.PageWorkPoints = (function () {
   }
 
   function load() {
+    var all = S.getWorkPoints();
+    var exists = !!(all && Object.prototype.hasOwnProperty.call(all, state.yearMonth));
     var m = S.getWorkPointsMonth(state.yearMonth);
-    if (!m.persons || m.persons.length === 0) {
+    if (!exists) {
       var roster = S.getRoster();
       m.persons = roster.map(function (p) { return p.name; });
       if (m.persons.length > 0) S.saveWorkPointsMonth(state.yearMonth, m);
@@ -247,15 +249,20 @@ window.PageWorkPoints = (function () {
     for (var i = 0; i < available.length; i++) {
       html += '<label class="gd-check"><input type="checkbox" name="sel" value="' + U.esc(available[i].name) + '"/><span>' + U.esc(available[i].name) + (available[i].position ? " · " + U.esc(available[i].position) : "") + "</span></label>";
     }
-    html += '</div><div class="gd-modal-btns">';
+    html += '</div><div class="gd-field" style="margin-top:10px"><label class="gd-label">或手动输入姓名（不在花名册也能添加，多个用逗号分隔）</label><input name="manual" class="gd-input" placeholder="例如：张三, 李四"/></div><div class="gd-modal-btns">';
     html += '<button type="button" class="gd-btn ghost" data-act="cancel">取消</button>';
     html += '<button type="submit" class="gd-btn primary">确认添加</button></div></form>';
     U.openModal(html, { dismissible: true }).then(function (data) {
       if (!data) return;
-      var chosen = [];
-      for (var k = 0; k < data.sel.length; k++) if (data.sel[k]) chosen.push(data.sel[k]);
-      if (chosen.length === 0) return;
       var mm = load();
+      var chosen = [];
+      for (var k = 0; k < (data.sel || []).length; k++) if (data.sel[k]) chosen.push(data.sel[k]);
+      var manual = String(data.manual || "").split(/[,，、;；\s]+/);
+      for (var mi = 0; mi < manual.length; mi++) {
+        var nm2 = (manual[mi] || "").trim();
+        if (nm2 && chosen.indexOf(nm2) < 0 && (mm.persons || []).indexOf(nm2) < 0) chosen.push(nm2);
+      }
+      if (chosen.length === 0) return;
       mm.persons = (mm.persons || []).concat(chosen);
       save(mm);
       U.toast("已添加 " + chosen.length + " 人");

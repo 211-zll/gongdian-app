@@ -102,6 +102,113 @@
     return true;
   }
 
+  /* ---------- 保存文件到指定位置（安卓：弹出系统“保存到”对话框，分块传输防超限） ---------- */
+  function saveBlobAs(blob, filename) {
+    return new Promise(function (resolve) {
+      if (!window.AndroidBridge || !window.AndroidBridge.beginSave) { resolve(false); return; }
+      try {
+        var cbId = "s" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+        window.__gdSaveCallbacks = window.__gdSaveCallbacks || {};
+        window.__gdSaveCallbacks[cbId] = resolve;
+        var reader = new FileReader();
+        reader.onload = function (e) {
+          try {
+            var dataUrl = String(e.target.result);
+            var idx = dataUrl.indexOf(",");
+            var b64 = idx >= 0 ? dataUrl.slice(idx + 1) : dataUrl;
+            if (!window.AndroidBridge.beginSave(filename)) { resolve(false); return; }
+            var CHUNK = 400000;
+            for (var i = 0; i < b64.length; i += CHUNK) {
+              if (!window.AndroidBridge.appendChunk(b64.slice(i, i + CHUNK))) { resolve(false); return; }
+            }
+            window.AndroidBridge.finishSave(cbId);
+          } catch (err) { resolve(false); }
+        };
+        reader.onerror = function () { resolve(false); };
+        reader.readAsDataURL(blob);
+      } catch (err) { resolve(false); }
+    });
+  }
+
+  /* ---------- 全屏图片查看器（支持双指捏合/滚轮缩放、拖动、按钮缩放） ---------- */
+  function lightbox(dataUrl, title) {
+    var old = document.getElementById("gd-lightbox");
+    if (old && old.parentNode) old.parentNode.removeChild(old);
+    var ov = document.createElement("div");
+    ov.id = "gd-lightbox";
+    ov.className = "gd-lightbox";
+    ov.innerHTML =
+      '<div class="lb-top"><span class="lb-title"></span><div class="lb-btns">' +
+      '<button class="lb-btn" data-lb="out">缩小</button>' +
+      '<button class="lb-btn" data-lb="reset">还原</button>' +
+      '<button class="lb-btn" data-lb="in">放大</button>' +
+      '<button class="lb-btn lb-close" data-lb="close">关闭</button></div></div>' +
+      '<div class="lb-stage"><img class="lb-img" alt=""/></div>';
+    var tEl = ov.querySelector(".lb-title");
+    if (tEl) tEl.textContent = title || "";
+    var img = ov.querySelector(".lb-img");
+    img.src = dataUrl;
+    document.body.appendChild(ov);
+
+    var scale = 1, tx = 0, ty = 0;
+    function apply() { img.style.transform = "translate(" + tx + "px," + ty + "px) scale(" + scale + ")"; }
+    function zoomBy(f) { scale = Math.max(1, Math.min(6, scale * f)); apply(); }
+    function reset() { scale = 1; tx = 0; ty = 0; apply(); }
+    function closeLb() { if (ov.parentNode) ov.parentNode.removeChild(ov); }
+
+    ov.addEventListener("click", function (e) {
+      var b = e.target && e.target.closest ? e.target.closest("[data-lb]") : null;
+      if (b) {
+        var act = b.getAttribute("data-lb");
+        if (act === "close") closeLb();
+        else if (act === "in") zoomBy(1.4);
+        else if (act === "out") zoomBy(1 / 1.4);
+        else if (act === "reset") reset();
+        return;
+      }
+      if (e.target === ov || (e.target.classList && e.target.classList.contains("lb-stage"))) closeLb();
+    });
+
+    // 单击图片：放大/还原切换
+    img.addEventListener("click", function (e) {
+      e.stopPropagation();
+      if (scale > 1.01) { reset(); }
+      else { scale = 2.4; tx = 0; ty = 0; apply(); }
+    });
+
+    // 触摸：双指捏合缩放 + 单指拖动
+    var startD = 0, startScale = 1, startT = null;
+    img.addEventListener("touchstart", function (e) {
+      if (e.touches.length === 2) {
+        var dx = e.touches[0].clientX - e.touches[1].clientX;
+        var dy = e.touches[0].clientY - e.touches[1].clientY;
+        startD = Math.sqrt(dx * dx + dy * dy);
+        startScale = scale;
+      } else if (e.touches.length === 1) {
+        startT = { x: e.touches[0].clientX - tx, y: e.touches[0].clientY - ty };
+      }
+    }, { passive: false });
+    img.addEventListener("touchmove", function (e) {
+      e.preventDefault();
+      if (e.touches.length === 2) {
+        var dx2 = e.touches[0].clientX - e.touches[1].clientX;
+        var dy2 = e.touches[0].clientY - e.touches[1].clientY;
+        var d = Math.sqrt(dx2 * dx2 + dy2 * dy2);
+        if (startD > 0) { scale = Math.max(1, Math.min(6, startScale * (d / startD))); apply(); }
+      } else if (e.touches.length === 1 && startT) {
+        tx = e.touches[0].clientX - startT.x;
+        ty = e.touches[0].clientY - startT.y;
+        apply();
+      }
+    }, { passive: false });
+    img.addEventListener("touchend", function () { startD = 0; startT = null; });
+
+    // 滚轮缩放（桌面浏览器）
+    ov.addEventListener("wheel", function (e) {
+      e.preventDefault();
+      zoomBy(e.deltaY < 0 ? 1.15 : 1 / 1.15);
+    }, { passive: false });
+  }
   /* ---------- Toast 提示 ---------- */
   function toast(msg, type) {
     var el = document.getElementById("gd-toast");
@@ -325,7 +432,7 @@
     uid: uid, pad: pad, fmtYmd: fmtYmd, fmtYm: fmtYm, daysInMonth: daysInMonth,
     weekdayCn: weekdayCn, parseYmd: parseYmd, fmtDateTime: fmtDateTime, fmtDateCn: fmtDateCn,
     ageFromIdCard: ageFromIdCard, esc: esc,
-    downloadBlob: downloadBlob, downloadJson: downloadJson, downloadText: downloadText, downloadDataUrl: downloadDataUrl,
+    downloadBlob: downloadBlob, downloadJson: downloadJson, downloadText: downloadText, downloadDataUrl: downloadDataUrl, saveBlobAs: saveBlobAs, lightbox: lightbox,
     toast: toast, confirmDialog: confirmDialog, alertDialog: alertDialog, openModal: openModal,
     icon: icon, field: field,
     enterFullscreen: enterFullscreen, exitFullscreen: exitFullscreen

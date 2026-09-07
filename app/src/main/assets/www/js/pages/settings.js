@@ -54,6 +54,18 @@ window.PageSettings = (function () {
   function exportData() {
     var data = S.exportAll();
     var name = "供电工区数据备份_" + U.fmtYmd(new Date()) + ".json";
+    // 安卓 APP：弹出系统“保存到”对话框，可自由选择保存位置与文件名
+    if (window.AndroidBridge) {
+      try {
+        var json = JSON.stringify(data, null, 2);
+        var blob = new Blob([json], { type: "application/json" });
+        U.saveBlobAs(blob, name).then(function (ok) {
+          if (ok) { U.toast("备份已导出"); window.App.refresh(); }
+          else { U.toast("导出已取消或失败", "error"); }
+        });
+        return;
+      } catch (e) {}
+    }
     U.downloadJson(data, name);
     U.toast("备份文件已下载到本地");
   }

@@ -19,6 +19,7 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
 
@@ -27,12 +28,19 @@ import java.io.OutputStream;
  * 加载 assets/www 离线应用，支持：
  *  1) 系统文件/相册选择器（网页 input type=file 在 APP 内可用）
  *  2) JS 桥 AndroidBridge：图片保存到手机相册、其他文件保存到“下载”目录
+ *  3) 分块保存到用户自选位置（导出备份时弹出系统“保存到”对话框）
  */
 public class MainActivity extends Activity {
     private WebView web;
     private ValueCallback<Uri[]> filePathCallback;
     private static final int REQ_FILE_CHOOSER = 1001;
     private static final int REQ_STORAGE_PERM = 1002;
+    private static final int REQ_SAVE_AS = 1003;
+
+    // “保存到”分块传输临时状态
+    private File tempSaveFile;
+    private String pendingSaveName;
+    private String pendingSaveCb;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -71,7 +79,7 @@ public class MainActivity extends Activity {
             }
         });
 
-        // 暴露给网页的保存桥：window.AndroidBridge.saveImageToGallery / saveFile
+        // 暴露给网页的保存桥：window.AndroidBridge
         web.addJavascriptInterface(new Bridge(), "AndroidBridge");
         web.loadUrl("file:///android_asset/www/index.html");
         setContentView(web);
@@ -92,6 +100,35 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == REQ_SAVE_AS) {
+            boolean ok = false;
+            if (resultCode == RESULT_OK && data != null && data.getData() != null && tempSaveFile != null) {
+                try {
+                    Uri uri = data.getData();
+                    OutputStream os = getContentResolver().openOutputStream(uri);
+                    if (os != null) {
+                        FileInputStream fis = new FileInputStream(tempSaveFile);
+                        byte[] buf = new byte[8192];
+                        int n;
+                        while ((n = fis.read(buf)) > 0) {
+                            os.write(buf, 0, n);
+                        }
+                        fis.close();
+                        os.flush();
+                        os.close();
+                        ok = true;
+                    }
+                } catch (Exception e) {
+                    ok = false;
+                }
+            }
+            if (tempSaveFile != null) {
+                tempSaveFile.delete();
+                tempSaveFile = null;
+            }
+            jsSaveResult(ok);
+            return;
+        }
         if (requestCode == REQ_FILE_CHOOSER) {
             if (filePathCallback == null) {
                 return;
@@ -124,6 +161,24 @@ public class MainActivity extends Activity {
         }
     }
 
+    // 把保存结果回传给网页（Promise resolve）
+    private void jsSaveResult(final boolean ok) {
+        final String cb = pendingSaveCb;
+        pendingSaveCb = null;
+        if (cb == null) {
+            return;
+        }
+        final String js = "(function(){try{var m=window.__gdSaveCallbacks||{};var f=m['" + cb + "'];if(f){delete m['" + cb + "'];f(" + ok + ");}}catch(e){}})();";
+        if (web != null) {
+            web.post(new Runnable() {
+                @Override
+                public void run() {
+                    web.evaluateJavascript(js, null);
+                }
+            });
+        }
+    }
+
     /* ---------------- JS 桥 ---------------- */
     private class Bridge {
         @JavascriptInterface
@@ -134,6 +189,54 @@ public class MainActivity extends Activity {
         @JavascriptInterface
         public boolean saveFile(String dataUrl, String filename) {
             return saveDataUrl(dataUrl, filename, false);
+        }
+
+        // —— 导出到用户自选位置（分块写入临时文件，随后弹系统“保存到”对话框） ——
+        @JavascriptInterface
+        public boolean beginSave(String filename) {
+            try {
+                pendingSaveName = sanitize(filename);
+                tempSaveFile = File.createTempFile("gd_export_", ".tmp", getCacheDir());
+                return tempSaveFile != null;
+            } catch (Exception e) {
+                return false;
+            }
+        }
+
+        @JavascriptInterface
+        public boolean appendChunk(String b64) {
+            try {
+                if (tempSaveFile == null) {
+                    return false;
+                }
+                byte[] d = Base64.decode(b64, Base64.DEFAULT);
+                FileOutputStream fos = new FileOutputStream(tempSaveFile, true);
+                fos.write(d);
+                fos.flush();
+                fos.close();
+                return true;
+            } catch (Exception e) {
+                return false;
+            }
+        }
+
+        @JavascriptInterface
+        public void finishSave(String callbackId) {
+            pendingSaveCb = callbackId;
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        Intent i = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+                        i.addCategory(Intent.CATEGORY_OPENABLE);
+                        i.setType("*/*");
+                        i.putExtra(Intent.EXTRA_TITLE, (pendingSaveName == null || pendingSaveName.length() == 0) ? "export.json" : pendingSaveName);
+                        startActivityForResult(i, REQ_SAVE_AS);
+                    } catch (Exception e) {
+                        jsSaveResult(false);
+                    }
+                }
+            });
         }
     }
 
