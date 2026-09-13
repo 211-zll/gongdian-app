@@ -343,7 +343,7 @@
   }
 
   /* ---------- 全屏 ---------- */
-  var FS_ZOOMS = [1, 0.85, 0.7, 0.55, 0.42];
+  var FS_ZOOMS = [1, 0.9, 0.8, 0.7, 0.6, 0.5, 0.42];
   function fsSetZoom(wrap, idx) {
     if (!wrap) return;
     if (idx < 0) idx = 0;
@@ -352,36 +352,99 @@
     wrap.classList.add("gd-zoom-" + idx);
     wrap.setAttribute("data-fs-zoom", String(idx));
   }
+  function fsTouchDistance(touches) {
+    var dx = touches[0].clientX - touches[1].clientX;
+    var dy = touches[0].clientY - touches[1].clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  }
+  var fsPopBound = false;
+  function fsPopHandler() {
+    var w = document.querySelector("#gd-page .gd-table-wrap.gd-fs");
+    if (w) exitFullscreen();
+  }
   function enterFullscreen(exitAct) {
     var wrap = document.querySelector("#gd-page .gd-table-wrap");
     if (!wrap) return;
     wrap.classList.add("gd-fs");
     fsSetZoom(wrap, 0);
+    // 手机返回键：先退出全屏，操作条随之消失
+    try { history.pushState({ gdFs: 1 }, ""); } catch (e) {}
+    if (!fsPopBound) {
+      window.addEventListener("popstate", fsPopHandler);
+      window.addEventListener("keydown", function (e) { if (e.keyCode === 27) fsPopHandler(); });
+      fsPopBound = true;
+    }
+    // 手指双指捏合缩放（放大/缩小）
+    if (!wrap.getAttribute("data-fs-gesture")) {
+      wrap.setAttribute("data-fs-gesture", "1");
+      var pinchStartD = 0, pinchStartIdx = 0;
+      wrap.addEventListener("touchstart", function (e) {
+        if (e.touches.length === 2) {
+          pinchStartD = fsTouchDistance(e.touches);
+          pinchStartIdx = Number(wrap.getAttribute("data-fs-zoom") || 0);
+        }
+      }, { passive: true });
+      wrap.addEventListener("touchmove", function (e) {
+        if (e.touches.length === 2 && pinchStartD > 0) {
+          var d = fsTouchDistance(e.touches);
+          if (d > 0) {
+            var delta = Math.round((d / pinchStartD - 1) * 5);
+            fsSetZoom(wrap, pinchStartIdx - delta);
+          }
+        }
+      }, { passive: true });
+      wrap.addEventListener("touchend", function () { pinchStartD = 0; }, { passive: true });
+    }
+    // 操作条：只保留“横屏”和“整月”，可随意拖动
     var bar = document.getElementById("gd-fs-bar");
     if (!bar) {
       bar = document.createElement("div");
       bar.id = "gd-fs-bar";
       bar.className = "gd-fs-bar";
-      bar.innerHTML =
-        '<button class="gd-fs-btn" data-fs="exit">' + icon("close") + "退出</button>" +
-        '<button class="gd-fs-btn" data-fs="landscape">横屏</button>' +
-        '<button class="gd-fs-btn" data-fs="portrait">竖屏</button>' +
-        '<button class="gd-fs-btn" data-fs="zoom-in">放大</button>' +
-        '<button class="gd-fs-btn" data-fs="zoom-out">缩小</button>' +
-        '<button class="gd-fs-btn" data-fs="fit">整月</button>';
+      bar.innerHTML = '<button class="gd-fs-btn" data-fs="landscape">横屏</button><button class="gd-fs-btn" data-fs="fit">整月</button>';
+      var drag = null, moved = false;
+      function startDrag(x, y) {
+        var r = bar.getBoundingClientRect();
+        drag = { x: x, y: y, left: r.left, top: r.top };
+        moved = false;
+        bar.style.transform = "none";
+        bar.style.left = r.left + "px";
+        bar.style.top = r.top + "px";
+        bar.style.bottom = "auto";
+      }
+      function moveDrag(x, y) {
+        if (!drag) return;
+        var dx = x - drag.x, dy = y - drag.y;
+        if (Math.abs(dx) + Math.abs(dy) > 6) moved = true;
+        var maxL = window.innerWidth - bar.offsetWidth - 4;
+        var maxT = window.innerHeight - bar.offsetHeight - 4;
+        bar.style.left = Math.max(4, Math.min(maxL, drag.left + dx)) + "px";
+        bar.style.top = Math.max(4, Math.min(maxT, drag.top + dy)) + "px";
+      }
+      bar.addEventListener("touchstart", function (e) {
+        if (e.touches.length === 1) { var t = e.touches[0]; startDrag(t.clientX, t.clientY); }
+      }, { passive: true });
+      bar.addEventListener("touchmove", function (e) {
+        if (e.touches.length === 1) { var t = e.touches[0]; moveDrag(t.clientX, t.clientY); }
+      }, { passive: true });
+      bar.addEventListener("touchend", function () { drag = null; setTimeout(function () { moved = false; }, 60); }, { passive: true });
+      bar.addEventListener("mousedown", function (e) { startDrag(e.clientX, e.clientY); });
+      document.addEventListener("mousemove", function (e) { if (drag) moveDrag(e.clientX, e.clientY); });
+      document.addEventListener("mouseup", function () { drag = null; });
       bar.addEventListener("click", function (e) {
         var b = e.target && e.target.closest ? e.target.closest("[data-fs]") : null;
         if (!b) return;
+        if (moved) { moved = false; return; }
         var act = b.getAttribute("data-fs");
         var w = document.querySelector("#gd-page .gd-table-wrap.gd-fs");
         if (!w) return;
-        var idx = Number(w.getAttribute("data-fs-zoom") || 0);
-        if (act === "exit") exitFullscreen();
-        else if (act === "landscape") w.classList.add("gd-fs-landscape");
-        else if (act === "portrait") w.classList.remove("gd-fs-landscape");
-        else if (act === "zoom-in") fsSetZoom(w, idx - 1);
-        else if (act === "zoom-out") fsSetZoom(w, idx + 1);
-        else if (act === "fit") fsSetZoom(w, FS_ZOOMS.length - 1);
+        if (act === "landscape") {
+          if (w.classList.contains("gd-fs-landscape")) { w.classList.remove("gd-fs-landscape"); b.textContent = "横屏"; }
+          else { w.classList.add("gd-fs-landscape"); b.textContent = "竖屏"; }
+        } else if (act === "fit") {
+          var idx = Number(w.getAttribute("data-fs-zoom") || 0);
+          fsSetZoom(w, idx >= FS_ZOOMS.length - 1 ? 0 : FS_ZOOMS.length - 1);
+        }
       });
       document.body.appendChild(bar);
     }

@@ -453,3 +453,15 @@ input[type="range"] { width: 100%; accent-color: var(--primary); }
 .todo-card .gd-tags { margin-top: 3px; }
 .todo-card .gd-del { padding: 4px; }
 .todo-card .gd-circle { width: 20px; height: 20px; }
+
+/* ===== 全屏操作条：可拖动 + 更小缩放级别 ===== */
+.gd-fs-bar { touch-action: none; cursor: move; user-select: none; }
+.gd-fs-bar .gd-fs-btn { cursor: pointer; }
+.gd-table-wrap.gd-fs.gd-zoom-5 .gd-table,
+.gd-table-wrap.gd-fs.gd-zoom-6 .gd-table { width: 100%; table-layout: fixed; }
+.gd-table-wrap.gd-fs.gd-zoom-5 col, .gd-table-wrap.gd-fs.gd-zoom-6 col { width: auto !important; }
+.gd-table-wrap.gd-fs.gd-zoom-5 .gd-table th, .gd-table-wrap.gd-fs.gd-zoom-5 .gd-table td,
+.gd-table-wrap.gd-fs.gd-zoom-6 .gd-table th, .gd-table-wrap.gd-fs.gd-zoom-6 .gd-table td { font-size: 8px; padding: 0; }
+.gd-table-wrap.gd-fs.gd-zoom-5 .gd-shift, .gd-table-wrap.gd-fs.gd-zoom-5 .gd-pt,
+.gd-table-wrap.gd-fs.gd-zoom-6 .gd-shift, .gd-table-wrap.gd-fs.gd-zoom-6 .gd-pt { font-size: 8px; padding: 0; min-height: 18px; }
+.gd-table-wrap.gd-fs.gd-zoom-5 .gd-table .sticky, .gd-table-wrap.gd-fs.gd-zoom-6 .gd-table .sticky { position: static; }
