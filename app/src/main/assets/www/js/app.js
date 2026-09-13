@@ -1,4 +1,4 @@
-/**
+﻿/**
  * app.js —— 应用主控
  * 路由、布局、底部导航、事件委托
  */
@@ -65,6 +65,14 @@ window.App = (function () {
 
   /* ---------- 渲染 ---------- */
   function render() {
+    // 记录当前滚动位置，重绘后恢复（排班/工分等长表格改动后不跳回顶部）
+    var scrollEl = document.getElementById("gd-scroll");
+    var keepTop = scrollEl ? scrollEl.scrollTop : 0;
+    var oldWraps = document.querySelectorAll("#gd-page .gd-table-wrap");
+    var keepWraps = [];
+    for (var wi = 0; wi < oldWraps.length; wi++) {
+      keepWraps.push({ left: oldWraps[wi].scrollLeft, top: oldWraps[wi].scrollTop });
+    }
     var page = PAGES[current] || PageHome;
     var el = document.getElementById("gd-page");
     el.innerHTML = page.render();
@@ -72,6 +80,12 @@ window.App = (function () {
     if (page.actions) actions = page.actions;
     if (page.bind) page.bind();
     renderNav();
+    if (scrollEl) scrollEl.scrollTop = keepTop;
+    var newWraps = document.querySelectorAll("#gd-page .gd-table-wrap");
+    for (var wj = 0; wj < newWraps.length && wj < keepWraps.length; wj++) {
+      newWraps[wj].scrollLeft = keepWraps[wj].left;
+      newWraps[wj].scrollTop = keepWraps[wj].top;
+    }
   }
 
   function renderNav() {

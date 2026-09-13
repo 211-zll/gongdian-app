@@ -420,3 +420,36 @@ input[type="range"] { width: 100%; accent-color: var(--primary); }
 .diagram-preview{cursor:zoom-in}
 .photo-item { position: relative; overflow: hidden; background: #eef1f4; border-radius: 9px; }
 .photo-item .photo-name { position: absolute; left: 0; right: 0; bottom: 0; padding: 2px 5px; font-size: 11px; line-height: 1.4; color: #fff; background: rgba(0,0,0,.55); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; text-align: left; font-style: normal; border-radius: 0 0 9px 9px; }
+/* ===== 新增班次颜色：流 / 流值 / 天窗 ===== */
+.gd-shift.liu { color: #0891b2; background: #ecfeff; }
+.gd-shift.liuzhi { color: #7c3aed; background: #f5f3ff; }
+.gd-shift.tianchuang { color: #db2777; background: #fdf2f8; }
+.gd-shift-badge.liu { background: #ecfeff; color: #0891b2; }
+.gd-shift-badge.liuzhi { background: #f5f3ff; color: #7c3aed; }
+.gd-shift-badge.tianchuang { background: #fdf2f8; color: #db2777; }
+
+/* ===== 全屏工具栏与缩放 ===== */
+.gd-fs-bar { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 400; display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; background: rgba(15,23,42,.9); padding: 6px 8px; border-radius: 16px; max-width: 96vw; }
+.gd-fs-btn { background: rgba(255,255,255,.16); color: #fff; border: 0; border-radius: 999px; padding: 7px 12px; font-size: 12.5px; white-space: nowrap; }
+.gd-fs-btn:active { background: rgba(255,255,255,.32); }
+.gd-table-wrap.gd-fs.gd-fs-landscape { inset: auto; left: 50%; top: 50%; width: 100vh; height: 100vw; transform: translate(-50%,-50%) rotate(90deg); transform-origin: center center; }
+.gd-table-wrap.gd-fs.gd-zoom-1 col:not(:first-child) { width: 34px !important; }
+.gd-table-wrap.gd-fs.gd-zoom-2 col:not(:first-child) { width: 28px !important; }
+.gd-table-wrap.gd-fs.gd-zoom-3 col:not(:first-child) { width: 23px !important; }
+.gd-table-wrap.gd-fs.gd-zoom-2 .gd-table th, .gd-table-wrap.gd-fs.gd-zoom-2 .gd-table td { font-size: 11px; }
+.gd-table-wrap.gd-fs.gd-zoom-3 .gd-table th, .gd-table-wrap.gd-fs.gd-zoom-3 .gd-table td { font-size: 10px; }
+.gd-table-wrap.gd-fs.gd-zoom-3 .gd-shift, .gd-table-wrap.gd-fs.gd-zoom-3 .gd-pt { font-size: 10px; padding: 1px; min-height: 24px; }
+.gd-table-wrap.gd-fs.gd-zoom-4 .gd-table { width: 100%; table-layout: fixed; }
+.gd-table-wrap.gd-fs.gd-zoom-4 col { width: auto !important; }
+.gd-table-wrap.gd-fs.gd-zoom-4 .gd-table th, .gd-table-wrap.gd-fs.gd-zoom-4 .gd-table td { font-size: 9px; padding: 0; }
+.gd-table-wrap.gd-fs.gd-zoom-4 .gd-shift, .gd-table-wrap.gd-fs.gd-zoom-4 .gd-pt { font-size: 9px; padding: 0; min-height: 20px; }
+.gd-table-wrap.gd-fs.gd-zoom-4 .gd-table .sticky { position: static; }
+
+/* ===== 待办紧凑显示（优先级在行首） ===== */
+.todo-list { gap: 5px; }
+.todo-card { padding: 8px 10px; gap: 8px; margin-bottom: 0; }
+.todo-card .todo-pri { flex-shrink: 0; min-width: 30px; justify-content: center; }
+.todo-card .gd-card-sub { margin-top: 2px; }
+.todo-card .gd-tags { margin-top: 3px; }
+.todo-card .gd-del { padding: 4px; }
+.todo-card .gd-circle { width: 20px; height: 20px; }

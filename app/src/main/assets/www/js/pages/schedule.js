@@ -1,4 +1,4 @@
-/**
+﻿/**
  * schedule.js —— 排班表页面
  * 月历网格：行=人员，列=日期；班次：休/白/值/年休/学/差
  * 支持人员管理、默认排班、导入导出 Excel、导出图片
@@ -8,8 +8,8 @@ window.PageSchedule = (function () {
   var U = window.Util;
   var S = window.Store;
 
-  var SHIFTS = ["休", "白", "值", "年休", "学", "差"];
-  var SHIFT_CLASS = { "休": "rest", "白": "bai", "值": "zhi", "年休": "nrest", "学": "xue", "差": "cha" };
+  var SHIFTS = ["休", "白", "值", "年休", "学", "差", "流", "流值", "天窗"];
+  var SHIFT_CLASS = { "休": "rest", "白": "bai", "值": "zhi", "年休": "nrest", "学": "xue", "差": "cha", "流": "liu", "流值": "liuzhi", "天窗": "tianchuang" };
 
   var state = { yearMonth: U.fmtYm(new Date()), selected: null };
 
@@ -439,7 +439,7 @@ window.PageSchedule = (function () {
         ctx.beginPath(); ctx.moveTo(x2, y); ctx.lineTo(x2, y + cellH); ctx.stroke();
         if (sh) {
           ctx.textAlign = "center";
-          var col = sh === "值" ? "#1d4ed8" : sh === "白" ? "#047857" : sh === "休" ? "#9ca3af" : "#b45309";
+          var col = sh === "值" ? "#1d4ed8" : sh === "白" ? "#047857" : sh === "休" ? "#9ca3af" : sh === "流" ? "#0891b2" : sh === "流值" ? "#7c3aed" : sh === "天窗" ? "#db2777" : "#b45309";
           ctx.fillStyle = col;
           ctx.fillText(sh, x2 + cellW / 2, y + cellH / 2);
         }

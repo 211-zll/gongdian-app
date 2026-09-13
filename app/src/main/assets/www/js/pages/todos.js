@@ -1,4 +1,4 @@
-/**
+﻿/**
  * todos.js —— 待办 & 备忘录页面
  */
 window.PageTodos = (function () {
@@ -32,11 +32,11 @@ window.PageTodos = (function () {
   function todoSort(list) {
     var order = { high: 0, medium: 1, low: 2 };
     return list.slice().sort(function (a, b) {
-      if (!!a.isImportant !== !!b.isImportant) return a.isImportant ? -1 : 1;
       if (a.status !== b.status) return a.status === "pending" ? -1 : 1;
       var pa = order[a.priority] !== undefined ? order[a.priority] : 3;
       var pb = order[b.priority] !== undefined ? order[b.priority] : 3;
       if (pa !== pb) return pa - pb;
+      if (!!a.isImportant !== !!b.isImportant) return a.isImportant ? -1 : 1;
       var ta = a.dueDate ? new Date(a.dueDate).getTime() : Infinity;
       var tb = b.dueDate ? new Date(b.dueDate).getTime() : Infinity;
       return ta - tb;
@@ -89,19 +89,18 @@ window.PageTodos = (function () {
     if (filtered.length === 0) {
       html += '<div class="gd-empty">' + U.icon("check") + "<p>" + (todos.length === 0 ? "添加一条新的待办开始管理吧" : "没有匹配的待办事项") + "</p></div>";
     } else {
-      html += '<div class="gd-list">';
+      html += '<div class="gd-list todo-list">';
       for (var j = 0; j < filtered.length; j++) {
         var t = filtered[j];
         var done = t.status === "completed";
         html += '<div class="gd-card todo-card' + (done ? " done" : "") + '">';
+        html += '<span class="gd-badge pri todo-pri ' + (t.priority || "medium") + '">' + (PRIORITY[t.priority] || "中") + "</span>";
         html += '<button class="gd-circle' + (done ? " checked" : "") + '" data-act="todo-toggle" data-id="' + U.esc(t.id) + '">' + (done ? U.icon("check") : "") + "</button>";
         html += '<div class="gd-card-body" data-act="todo-edit" data-id="' + U.esc(t.id) + '">';
         html += '<div class="gd-card-title">' + U.esc(t.title) + (t.isImportant ? ' <span class="star">' + U.icon("star") + "</span>" : "") + "</div>";
         if (t.description) html += '<div class="gd-card-sub">' + U.esc(t.description) + "</div>";
-        html += '<div class="gd-tags">';
-        html += '<span class="gd-badge pri ' + t.priority + '">' + (PRIORITY[t.priority] || "中") + "</span>";
-        if (t.dueDate) html += '<span class="gd-badge due">' + dueText(t.dueDate) + "</span>";
-        html += "</div></div>";
+        if (t.dueDate) html += '<div class="gd-tags"><span class="gd-badge due">' + dueText(t.dueDate) + "</span></div>";
+        html += "</div>";
         html += '<button class="gd-del" data-act="todo-del" data-id="' + U.esc(t.id) + '">' + U.icon("trash") + "</button>";
         html += "</div>";
       }

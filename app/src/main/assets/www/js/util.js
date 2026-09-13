@@ -1,4 +1,4 @@
-/**
+﻿/**
  * util.js —— 通用工具函数
  */
 (function (global) {
@@ -343,25 +343,60 @@
   }
 
   /* ---------- 全屏 ---------- */
+  var FS_ZOOMS = [1, 0.85, 0.7, 0.55, 0.42];
+  function fsSetZoom(wrap, idx) {
+    if (!wrap) return;
+    if (idx < 0) idx = 0;
+    if (idx > FS_ZOOMS.length - 1) idx = FS_ZOOMS.length - 1;
+    for (var i = 0; i < FS_ZOOMS.length; i++) wrap.classList.remove("gd-zoom-" + i);
+    wrap.classList.add("gd-zoom-" + idx);
+    wrap.setAttribute("data-fs-zoom", String(idx));
+  }
   function enterFullscreen(exitAct) {
     var wrap = document.querySelector("#gd-page .gd-table-wrap");
     if (!wrap) return;
     wrap.classList.add("gd-fs");
-    var btn = document.getElementById("gd-fs-exit");
-    if (!btn) {
-      btn = document.createElement("button");
-      btn.id = "gd-fs-exit";
-      btn.className = "gd-fs-exit-btn";
-      btn.setAttribute("data-act", exitAct || "fs-exit");
-      btn.innerHTML = icon("close") + "退出全屏";
-      document.body.appendChild(btn);
+    fsSetZoom(wrap, 0);
+    var bar = document.getElementById("gd-fs-bar");
+    if (!bar) {
+      bar = document.createElement("div");
+      bar.id = "gd-fs-bar";
+      bar.className = "gd-fs-bar";
+      bar.innerHTML =
+        '<button class="gd-fs-btn" data-fs="exit">' + icon("close") + "退出</button>" +
+        '<button class="gd-fs-btn" data-fs="landscape">横屏</button>' +
+        '<button class="gd-fs-btn" data-fs="portrait">竖屏</button>' +
+        '<button class="gd-fs-btn" data-fs="zoom-in">放大</button>' +
+        '<button class="gd-fs-btn" data-fs="zoom-out">缩小</button>' +
+        '<button class="gd-fs-btn" data-fs="fit">整月</button>';
+      bar.addEventListener("click", function (e) {
+        var b = e.target && e.target.closest ? e.target.closest("[data-fs]") : null;
+        if (!b) return;
+        var act = b.getAttribute("data-fs");
+        var w = document.querySelector("#gd-page .gd-table-wrap.gd-fs");
+        if (!w) return;
+        var idx = Number(w.getAttribute("data-fs-zoom") || 0);
+        if (act === "exit") exitFullscreen();
+        else if (act === "landscape") w.classList.add("gd-fs-landscape");
+        else if (act === "portrait") w.classList.remove("gd-fs-landscape");
+        else if (act === "zoom-in") fsSetZoom(w, idx - 1);
+        else if (act === "zoom-out") fsSetZoom(w, idx + 1);
+        else if (act === "fit") fsSetZoom(w, FS_ZOOMS.length - 1);
+      });
+      document.body.appendChild(bar);
     }
   }
   function exitFullscreen() {
     var wrap = document.querySelector("#gd-page .gd-table-wrap");
-    if (wrap) wrap.classList.remove("gd-fs");
-    var btn = document.getElementById("gd-fs-exit");
-    if (btn) document.body.removeChild(btn);
+    if (wrap) {
+      wrap.classList.remove("gd-fs");
+      wrap.classList.remove("gd-fs-landscape");
+      for (var i = 0; i < FS_ZOOMS.length; i++) wrap.classList.remove("gd-zoom-" + i);
+    }
+    var bar = document.getElementById("gd-fs-bar");
+    if (bar && bar.parentNode) bar.parentNode.removeChild(bar);
+    var old = document.getElementById("gd-fs-exit");
+    if (old && old.parentNode) old.parentNode.removeChild(old);
   }
 
   /* ---------- SVG 图标集合 ---------- */
